@@ -68,7 +68,7 @@ jobs:
         run: |
           gradle :app:assembleRelease --no-daemon
 
-      - name: Upload APK
+      - name: Upload artifacts
         uses: actions/upload-artifact@v4
         with:
           name: blog-zvi-apk
@@ -76,3 +76,15 @@ jobs:
             app/build/outputs/apk/release/*.apk
             assetlinks.json
             android.keystore
+
+      - name: Create Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: apk-v${{ github.run_number }}
+          name: APK 构建 #${{ github.run_number }}
+          files: |
+            app/build/outputs/apk/release/*.apk
+            assetlinks.json
+          generate_release_notes: false
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
