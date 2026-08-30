@@ -46,8 +46,11 @@ jobs:
       - name: Compute SHA256 fingerprint
         id: fp
         run: |
-          FP=$(keytool -list -v -keystore android.keystore -alias zvi -storepass zvi123456 \
-            | grep -A1 "SHA256:" | tail -1 | tr -d ' ' | tr -d ':')
+          # 用 openssl 提取证书 SHA256 指纹（冒号分隔大写，Android 要求格式）
+          keytool -exportcert -keystore android.keystore -alias zvi -storepass zvi123456 2>/dev/null \
+            | openssl x509 -inform DER -fingerprint -sha256 -noout 2>/dev/null \
+            | awk -F= '{print $2}' > fp.txt
+          FP=$(cat fp.txt)
           echo "fingerprint=$FP" >> $GITHUB_OUTPUT
           echo "FP=$FP"
           # 生成 assetlinks.json（需部署到 https://blog.zvi.onl/.well-known/assetlinks.json）
