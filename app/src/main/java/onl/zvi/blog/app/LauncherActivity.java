@@ -1,6 +1,7 @@
 package onl.zvi.blog.app;
 
 import android.app.Activity;
+import android.content.ComponentName;
 import android.content.Intent;
 import android.net.Uri;
 import android.os.Bundle;
@@ -36,7 +37,7 @@ public class LauncherActivity extends Activity {
         // 尝试以 TWA 方式启动：连接 Chrome 的 CustomTabs 服务
         connection = new CustomTabsServiceConnection() {
             @Override
-            public void onCustomTabsConnected(String name, CustomTabsClient client) {
+            public void onCustomTabsServiceConnected(ComponentName name, CustomTabsClient client) {
                 client.warmup(0L);
                 CustomTabsSession session = client.newSession(null);
                 CustomTabsIntent.Builder builder = new CustomTabsIntent.Builder(session);
@@ -44,13 +45,13 @@ public class LauncherActivity extends Activity {
                 builder.setStartAnimations(LauncherActivity.this, android.R.anim.fade_in, android.R.anim.fade_out);
                 builder.setExitAnimations(LauncherActivity.this, android.R.anim.fade_in, android.R.anim.fade_out);
                 CustomTabsIntent intent = builder.build();
-                intent.intent.setPackage(name);
+                intent.intent.setPackage(name.getPackageName());
                 intent.launchUrl(LauncherActivity.this, Uri.parse(START_URL));
                 finish();
             }
 
             @Override
-            public void onCustomTabsServiceDisconnected(String name) {
+            public void onCustomTabsServiceDisconnected(ComponentName name) {
             }
         };
 
