@@ -5,6 +5,9 @@ on:
     branches: [ main ]
   workflow_dispatch:
 
+permissions:
+  contents: write
+
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -43,8 +46,11 @@ jobs:
       - name: Compute SHA256 fingerprint
         id: fp
         run: |
-          FP=$(keytool -list -v -keystore android.keystore -alias zvi -storepass zvi123456 \
-            | grep -A1 "SHA256:" | tail -1 | tr -d ' ' | tr -d ':')
+          # 用 openssl 提取证书 SHA256 指纹（冒号分隔大写，Android 要求格式）
+          keytool -exportcert -keystore android.keystore -alias zvi -storepass zvi123456 2>/dev/null \
+            | openssl x509 -inform DER -fingerprint -sha256 -noout 2>/dev/null \
+            | awk -F= '{print $2}' > fp.txt
+          FP=$(cat fp.txt)
           echo "fingerprint=$FP" >> $GITHUB_OUTPUT
           echo "FP=$FP"
           # 生成 assetlinks.json（需部署到 https://blog.zvi.onl/.well-known/assetlinks.json）
@@ -68,7 +74,7 @@ jobs:
         run: |
           gradle :app:assembleRelease --no-daemon
 
-      - name: Upload APK
+      - name: Upload artifacts
         uses: actions/upload-artifact@v4
         with:
           name: blog-zvi-apk
@@ -76,3 +82,15 @@ jobs:
             app/build/outputs/apk/release/*.apk
             assetlinks.json
             android.keystore
+
+      - name: Create Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: apk-v${{ github.run_number }}
+          name: APK 构建 #${{ github.run_number }}
+          files: |
+            app/build/outputs/apk/release/*.apk
+            assetlinks.json
+          generate_release_notes: false
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
