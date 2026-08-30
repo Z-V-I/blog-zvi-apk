@@ -1,0 +1,2 @@
+rootProject.name = "blog-zvi-apk"
+include ':app'
